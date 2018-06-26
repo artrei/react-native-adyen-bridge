@@ -1,0 +1,24 @@
+{
+  "name": "react-native-adyen-bridge",
+  "version": "1.0.0",
+  "description": "react native bridge for adyen payment sdk",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/artrei/react-native-adyen-bridge.git"
+  },
+  "keywords": [
+    "react-native",
+    "adyen",
+    "android"
+  ],
+  "author": "Reda Adiyasa",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/artrei/react-native-adyen-bridge/issues"
+  },
+  "homepage": "https://github.com/artrei/react-native-adyen-bridge#readme"
+}

@@ -1,0 +1,30 @@
+apply plugin: 'com.android.library'
+
+android {
+	compileSdkVersion 25
+	buildToolsVersion "25.0.3"
+	defaultConfig {
+		minSdkVersion 16
+		targetSdkVersion 25
+		versionCode 1
+		versionName "1.0"
+		ndk {
+			abiFilters "armeabi-v7a", "x86"
+		}
+	}
+}
+
+allprojects {
+	repositories {
+		jcenter()
+		maven { url "$projectDir/../../react-native/android" }
+	}
+}
+
+dependencies {
+	compile 'com.facebook.react:react-native:+'
+	compile 'com.adyen.checkout:core:1.14.1'
+	compile 'com.adyen.checkout:utils:1.14.1'
+	compile 'com.adyen.checkout:ui:1.14.1'
+	compile 'com.adyen.checkout:cardscan:1.14.1'
+}
