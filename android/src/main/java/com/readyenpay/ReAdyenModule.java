@@ -71,11 +71,10 @@ public class ReAdyenModule extends ReactContextBaseJavaModule {
 
 		@Override
 		public void onPaymentResult(PaymentRequest paymentRequest, PaymentRequestResult paymentRequestResult) {
+			Payment payment = paymentRequestResult.getPayment();
 			String adyenResult = "";
 			
 			if (paymentRequestResult.isProcessed()) {
-				Payment payment = paymentRequestResult.getPayment();
-
 				// convert status:
 				switch (payment.getPaymentStatus()) {
 					case RECEIVED:
@@ -93,7 +92,7 @@ public class ReAdyenModule extends ReactContextBaseJavaModule {
 					case ERROR:
 						adyenResult = String.format("Payment failed with error (%s)", payment.getPayload());
 						break;
-				}	
+				}
 			}
 
 			if (adyenResult == "PAYMENT_RECEIVED" || adyenResult == "PAYMENT_AUTHORISED") {
