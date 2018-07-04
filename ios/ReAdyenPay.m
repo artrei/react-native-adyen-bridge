@@ -8,6 +8,11 @@
 
 @interface RCT_EXTERN_MODULE(ReAdyenPay, NSObject)
 
++ (BOOL)requiresMainQueueSetup
+{
+	return NO;
+}
+
 RCT_EXTERN_METHOD(showCheckout:(NSDictionary *)data)
 
 @end
