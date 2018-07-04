@@ -35,8 +35,8 @@ class ReAdyenPay: NSObject, CheckoutViewControllerDelegate {
 	}
 	
 	func checkoutViewController(_ controller: CheckoutViewController,
-															requiresPaymentDataForToken token: String,
-															completion: @escaping DataCompletion) {
+			requiresPaymentDataForToken token: String,
+			completion: @escaping DataCompletion) {
 		var paymentDetails: [String: Any] = checkoutData
 		paymentDetails["token"] = token
 		
@@ -64,11 +64,12 @@ class ReAdyenPay: NSObject, CheckoutViewControllerDelegate {
 	}
 	
 	func checkoutViewController(_ controller: CheckoutViewController,
-															requiresReturnURL completion: @escaping URLCompletion) {
+			requiresReturnURL completion: @escaping URLCompletion) {
 		urlCompletion = completion
 	}
 	
-	func checkoutViewController(_ controller: CheckoutViewController, didFinishWith result: PaymentRequestResult) {
+	func checkoutViewController(_ controller: CheckoutViewController,
+			didFinishWith result: PaymentRequestResult) {
 		controller.presentingViewController?.dismiss(animated: true, completion: {
 			self.paymentManagerResult(result: result)
 		})
