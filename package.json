@@ -1,6 +1,6 @@
 {
   "name": "react-native-adyen-bridge",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "description": "react native bridge for adyen payment sdk",
   "main": "index.js",
   "scripts": {
@@ -13,7 +13,8 @@
   "keywords": [
     "react-native",
     "adyen",
-    "android"
+    "android",
+    "ios"
   ],
   "author": "Reda Adiyasa",
   "license": "MIT",
