@@ -97,7 +97,7 @@ class ReAdyenPay: NSObject, CheckoutViewControllerDelegate {
 				adyenToken = payment.payload
 			
 			case let .error(error):
-				adyenResult = "Payment failed with error" + error.errorDescription!
+				adyenResult = error.errorDescription!
 		}
 		
 		if (adyenResult == "PAYMENT_RECEIVED" || adyenResult == "PAYMENT_AUTHORISED") {
