@@ -52,13 +52,12 @@ class ReAdyenPay: NSObject, CheckoutViewControllerDelegate {
 		
 		let session = URLSession(configuration: .default)
 		session.dataTask(with: request) { data, response, error in
-			if let data = data {
-				completion(data)
-			}
 			if let error = error {
 				var dict = Dictionary<String, String>()
 				dict["adyenResult"] = error.localizedDescription
 				self.sendEvent("onCheckoutDone", params: dict)
+			} else if let data = data {
+				completion(data)
 			}
 		}.resume()
 	}
