@@ -2,14 +2,11 @@ import Foundation
 import Adyen
 
 @objc(ReAdyenPay)
-class ReAdyenPay: NSObject, CheckoutViewControllerDelegate {
-	var bridge: RCTBridge!
-
-	var checkoutDict = Dictionary<String, Any>()
-	var checkoutURL = String()
-	var checkoutAPIKeyName = String()
-	var checkoutAPIKeyValue = String()
-
+class ReAdyenPay: RCTEventEmitter, CheckoutViewControllerDelegate {
+	fileprivate var checkoutDict = Dictionary<String, Any>()
+	fileprivate var checkoutURL = String()
+	fileprivate var checkoutAPIKeyName = String()
+	fileprivate var checkoutAPIKeyValue = String()
 	fileprivate var urlCompletion: URLCompletion?
 
 	@objc(applicationDidOpenURL:)
@@ -17,9 +14,8 @@ class ReAdyenPay: NSObject, CheckoutViewControllerDelegate {
 		urlCompletion?(url)
 	}
 
-	@objc
-	func sendEvent(_ eventName: String, params: Dictionary<String, Any>) {
-		self.bridge.eventDispatcher().sendAppEvent(withName: eventName, body: params)
+	override func supportedEvents() -> [String]! {
+		return ["onCheckoutDone"]
 	}
 
 	@objc(showCheckout:)
@@ -36,7 +32,6 @@ class ReAdyenPay: NSObject, CheckoutViewControllerDelegate {
 		startCheckout()
 	}
 
-	@objc
 	func startCheckout() {
 		let checkoutViewController = CheckoutViewController(delegate: self)
 
@@ -68,7 +63,7 @@ class ReAdyenPay: NSObject, CheckoutViewControllerDelegate {
 			if let error = error {
 				var dict = Dictionary<String, String>()
 				dict["adyenResult"] = error.localizedDescription
-				self.sendEvent("onCheckoutDone", params: dict)
+				self.sendEvent(withName: "onCheckoutDone", body: dict)
 			} else if let data = data {
 				completion(data)
 			}
@@ -98,13 +93,13 @@ class ReAdyenPay: NSObject, CheckoutViewControllerDelegate {
 				var dict = Dictionary<String, String>()
 				dict["adyenResult"] = adyenResult
 				dict["adyenToken"] = adyenToken
-				sendEvent("onCheckoutDone", params: dict)
+				sendEvent(withName: "onCheckoutDone", body: dict)
 
 			case let .error(error):
 				adyenResult = error.errorDescription!
 				var dict = Dictionary<String, String>()
 				dict["adyenResult"] = adyenResult
-				sendEvent("onCheckoutDone", params: dict)
+				sendEvent(withName: "onCheckoutDone", body: dict)
 		}
 	}
 }
