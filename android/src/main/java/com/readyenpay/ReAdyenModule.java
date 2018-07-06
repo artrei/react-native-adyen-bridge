@@ -25,10 +25,6 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
-import java.util.ArrayList;
-import java.io.StringWriter;
-import java.io.PrintWriter;
-
 public class ReAdyenModule extends ReactContextBaseJavaModule {
 	private String checkoutUrl = "";
 	private String checkoutAPIKeyName = "";
@@ -38,6 +34,36 @@ public class ReAdyenModule extends ReactContextBaseJavaModule {
 
 	public ReAdyenModule(ReactApplicationContext reactContext) {
 		super(reactContext);
+	}
+
+	@Override
+	public String getName() {
+		return "ReAdyenPay";
+	}
+
+	private void sendEvent(String eventName, WritableMap params) {
+		getReactApplicationContext()
+				.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+				.emit(eventName, params);
+	}
+
+	@ReactMethod
+	public void showCheckout(ReadableMap data) {
+		checkoutObject = new JSONObject(data.toHashMap());
+		checkoutUrl = data.getString("checkoutURL");
+		checkoutAPIKeyName = data.getString("checkoutAPIKeyName");
+		checkoutAPIKeyValue = data.getString("checkoutAPIKeyValue");
+
+		try {
+			checkoutObject.put("amount", new JSONObject(data.getMap("amount").toHashMap()));
+		} catch(JSONException e) {}
+
+		checkoutObject.remove("checkoutURL");
+		checkoutObject.remove("checkoutAPIKeyName");
+		checkoutObject.remove("checkoutAPIKeyValue");
+
+		paymentRequest = new PaymentRequest(this.getCurrentActivity(), paymentRequestListener);
+		paymentRequest.start();
 	}
 
 	private final PaymentRequestListener paymentRequestListener = new PaymentRequestListener() {
@@ -60,9 +86,7 @@ public class ReAdyenModule extends ReactContextBaseJavaModule {
 				@Override
 				public void onFailure(final Throwable e) {
 					WritableMap map = Arguments.createMap();
-					StringWriter sw = new StringWriter();
-					e.printStackTrace(new PrintWriter(sw));
-					map.putString("adyenResult", "Current stack trace is:\n" + sw.toString());
+					map.putString("adyenResult", e.getMessage());
 					sendEvent("onCheckoutDone", map);
 					paymentRequest.cancel();
 				}
@@ -71,85 +95,23 @@ public class ReAdyenModule extends ReactContextBaseJavaModule {
 
 		@Override
 		public void onPaymentResult(PaymentRequest paymentRequest, PaymentRequestResult paymentRequestResult) {
-			Payment payment = paymentRequestResult.getPayment();
 			String adyenResult = "";
+			String adyenToken = "";
 			
 			if (paymentRequestResult.isProcessed()) {
-				// convert status:
-				switch (payment.getPaymentStatus()) {
-					case RECEIVED:
-						adyenResult = "PAYMENT_RECEIVED";
-						break;
-					case AUTHORISED:
-						adyenResult = "PAYMENT_AUTHORISED";
-						break;
-					case REFUSED:
-						adyenResult = "PAYMENT_REFUSED";
-						break;
-					case CANCELLED:
-						adyenResult = "PAYMENT_CANCELLED";
-						break;
-					case ERROR:
-						adyenResult = String.format("Payment failed with error (%s)", payment.getPayload());
-						break;
-				}
-			}
-
-			if (adyenResult == "PAYMENT_RECEIVED" || adyenResult == "PAYMENT_AUTHORISED") {
+				Payment payment = paymentRequestResult.getPayment();
 				WritableMap map = Arguments.createMap();
+				adyenResult = payment.getPaymentStatus().toString();
+				adyenToken = payment.getPayload();
 				map.putString("adyenResult", adyenResult);
-				map.putString("adyenToken", payment.getPayload());
+				map.putString("adyenToken", adyenToken);
 				sendEvent("onCheckoutDone", map);
 			} else {
+				Throwable error = paymentRequestResult.getError();
 				WritableMap map = Arguments.createMap();
-				map.putString("adyenResult", adyenResult);
+				map.putString("adyenResult", error.getMessage());
 				sendEvent("onCheckoutDone", map);
 			}
 		}
 	};
-
-	private static ArrayList<ReAdyenModule> modules = new ArrayList<>();
-
-	@Override
-	public String getName() {
-		return "ReAdyenPay";
-	}
-
-	@Override
-	public void initialize() {
-		super.initialize();
-		modules.add(this);
-	}
-
-	@Override
-	public void onCatalystInstanceDestroy() {
-		super.onCatalystInstanceDestroy();
-		modules.remove(this);
-	}
-
-	private void sendEvent(String eventName, WritableMap params) {
-		getReactApplicationContext()
-				.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-				.emit(eventName, params);
-	}
-
-	@ReactMethod
-	public void showCheckout(ReadableMap data) {
-		checkoutObject = new JSONObject(data.toHashMap());
-
-		try {
-			checkoutObject.put("amount", new JSONObject(data.getMap("amount").toHashMap()));
-		} catch(JSONException e) {}
-
-		checkoutObject.remove("checkoutURL");
-		checkoutObject.remove("checkoutAPIKeyName");
-		checkoutObject.remove("checkoutAPIKeyValue");
-
-		checkoutUrl = data.getString("checkoutURL");
-		checkoutAPIKeyName = data.getString("checkoutAPIKeyName");
-		checkoutAPIKeyValue = data.getString("checkoutAPIKeyValue");
-
-		paymentRequest = new PaymentRequest(this.getCurrentActivity(), paymentRequestListener);
-		paymentRequest.start();
-	}
 }
