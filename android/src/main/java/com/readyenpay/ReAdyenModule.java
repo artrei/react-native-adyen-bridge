@@ -86,7 +86,7 @@ public class ReAdyenModule extends ReactContextBaseJavaModule {
 				@Override
 				public void onFailure(final Throwable e) {
 					WritableMap map = Arguments.createMap();
-					map.putString("adyenResult", e.getMessage().toLowerCase());
+					map.putString("adyenResult", e.getMessage());
 					sendEvent("onCheckoutDone", map);
 					paymentRequest.cancel();
 				}
@@ -100,7 +100,7 @@ public class ReAdyenModule extends ReactContextBaseJavaModule {
 
 			if (paymentRequestResult.isProcessed()) {
 				Payment payment = paymentRequestResult.getPayment();
-				adyenResult = payment.getPaymentStatus().toString().toLowerCase();
+				adyenResult = payment.getPaymentStatus().toString();
 				adyenToken = payment.getPayload();
 
 				WritableMap map = Arguments.createMap();
@@ -110,7 +110,7 @@ public class ReAdyenModule extends ReactContextBaseJavaModule {
 				sendEvent("onCheckoutDone", map);
 			} else {
 				Throwable error = paymentRequestResult.getError();
-				adyenResult = error.getMessage().toLowerCase();
+				adyenResult = error.getMessage();
 
 				WritableMap map = Arguments.createMap();
 				map.putString("adyenResult", adyenResult);

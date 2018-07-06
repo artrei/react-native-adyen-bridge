@@ -93,7 +93,7 @@ class ReAdyenPay: NSObject, CheckoutViewControllerDelegate {
 
 		switch result {
 			case let .payment(payment):
-				adyenResult = payment.status.rawValue
+				adyenResult = payment.status.rawValue.capitalized
 				adyenToken = payment.payload
 				var dict = Dictionary<String, String>()
 				dict["adyenResult"] = adyenResult
