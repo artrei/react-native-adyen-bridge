@@ -26,11 +26,11 @@ import java.util.Locale;
 import java.util.Map;
 
 public class ReAdyenModule extends ReactContextBaseJavaModule {
+	private JSONObject checkoutObject;
 	private String checkoutUrl = "";
 	private String checkoutAPIKeyName = "";
 	private String checkoutAPIKeyValue = "";
 	private PaymentRequest paymentRequest;
-	private JSONObject checkoutObject;
 
 	public ReAdyenModule(ReactApplicationContext reactContext) {
 		super(reactContext);
@@ -86,7 +86,7 @@ public class ReAdyenModule extends ReactContextBaseJavaModule {
 				@Override
 				public void onFailure(final Throwable e) {
 					WritableMap map = Arguments.createMap();
-					map.putString("adyenResult", e.getMessage());
+					map.putString("adyenResult", e.getMessage().toLowerCase());
 					sendEvent("onCheckoutDone", map);
 					paymentRequest.cancel();
 				}
@@ -97,19 +97,24 @@ public class ReAdyenModule extends ReactContextBaseJavaModule {
 		public void onPaymentResult(PaymentRequest paymentRequest, PaymentRequestResult paymentRequestResult) {
 			String adyenResult = "";
 			String adyenToken = "";
-			
+
 			if (paymentRequestResult.isProcessed()) {
 				Payment payment = paymentRequestResult.getPayment();
-				WritableMap map = Arguments.createMap();
-				adyenResult = payment.getPaymentStatus().toString();
+				adyenResult = payment.getPaymentStatus().toString().toLowerCase();
 				adyenToken = payment.getPayload();
+
+				WritableMap map = Arguments.createMap();
 				map.putString("adyenResult", adyenResult);
 				map.putString("adyenToken", adyenToken);
+
 				sendEvent("onCheckoutDone", map);
 			} else {
 				Throwable error = paymentRequestResult.getError();
+				adyenResult = error.getMessage().toLowerCase();
+
 				WritableMap map = Arguments.createMap();
-				map.putString("adyenResult", error.getMessage());
+				map.putString("adyenResult", adyenResult);
+
 				sendEvent("onCheckoutDone", map);
 			}
 		}
