@@ -28,8 +28,8 @@ import java.util.Map;
 public class ReAdyenModule extends ReactContextBaseJavaModule {
 	private JSONObject checkoutObject;
 	private String checkoutUrl = "";
-	private String checkoutAPIKeyName = "";
-	private String checkoutAPIKeyValue = "";
+	// private String checkoutAPIKeyName = "";
+	// private String checkoutAPIKeyValue = "";
 	private PaymentRequest paymentRequest;
 
 	public ReAdyenModule(ReactApplicationContext reactContext) {
@@ -51,16 +51,16 @@ public class ReAdyenModule extends ReactContextBaseJavaModule {
 	public void showCheckout(ReadableMap data) {
 		checkoutObject = new JSONObject(data.toHashMap());
 		checkoutUrl = data.getString("checkoutURL");
-		checkoutAPIKeyName = data.getString("checkoutAPIKeyName");
-		checkoutAPIKeyValue = data.getString("checkoutAPIKeyValue");
+		// checkoutAPIKeyName = data.getString("checkoutAPIKeyName");
+		// checkoutAPIKeyValue = data.getString("checkoutAPIKeyValue");
 
 		try {
 			checkoutObject.put("amount", new JSONObject(data.getMap("amount").toHashMap()));
 		} catch(JSONException e) {}
 
 		checkoutObject.remove("checkoutURL");
-		checkoutObject.remove("checkoutAPIKeyName");
-		checkoutObject.remove("checkoutAPIKeyValue");
+		// checkoutObject.remove("checkoutAPIKeyName");
+		// checkoutObject.remove("checkoutAPIKeyValue");
 
 		paymentRequest = new PaymentRequest(this.getCurrentActivity(), paymentRequestListener);
 		paymentRequest.start();
@@ -72,7 +72,7 @@ public class ReAdyenModule extends ReactContextBaseJavaModule {
 				final PaymentDataCallback paymentDataCallback) {
 			final Map<String, String> headers = new HashMap<>();
 			headers.put("Content-Type", "application/json; charset=UTF-8");
-			headers.put(checkoutAPIKeyName, checkoutAPIKeyValue);
+			// headers.put(checkoutAPIKeyName, checkoutAPIKeyValue);
 
 			try {
 				checkoutObject.put("token", token);
@@ -96,16 +96,16 @@ public class ReAdyenModule extends ReactContextBaseJavaModule {
 		@Override
 		public void onPaymentResult(PaymentRequest paymentRequest, PaymentRequestResult paymentRequestResult) {
 			String adyenResult = "";
-			String adyenToken = "";
+			String adyenPayload = "";
 
 			if (paymentRequestResult.isProcessed()) {
 				Payment payment = paymentRequestResult.getPayment();
 				adyenResult = payment.getPaymentStatus().toString();
-				adyenToken = payment.getPayload();
+				adyenPayload = payment.getPayload();
 
 				WritableMap map = Arguments.createMap();
 				map.putString("adyenResult", adyenResult);
-				map.putString("adyenToken", adyenToken);
+				map.putString("adyenPayload", adyenPayload);
 
 				sendEvent("onCheckoutDone", map);
 			} else {

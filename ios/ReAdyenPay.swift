@@ -5,42 +5,40 @@ import Adyen
 class ReAdyenPay: RCTEventEmitter, CheckoutViewControllerDelegate {
 	fileprivate var checkoutDict = Dictionary<String, Any>()
 	fileprivate var checkoutURL = String()
-	fileprivate var checkoutAPIKeyName = String()
-	fileprivate var checkoutAPIKeyValue = String()
+	// fileprivate var checkoutAPIKeyName = String()
+	// fileprivate var checkoutAPIKeyValue = String()
 	fileprivate var urlCompletion: URLCompletion?
 
-	@objc(applicationDidOpenURL:)
-	func applicationDidOpen(_ url: URL) {
+	@objc(applicationRedirect:)
+	func applicationRedirect(_ url: URL) {
 		urlCompletion?(url)
 	}
 
 	override func supportedEvents() -> [String]! {
-		return ["onCheckoutDone"]
+		return ["onCheckoutDone", "url"]
 	}
 
 	@objc(showCheckout:)
-	func showCheckout(checkoutNSDict: NSDictionary) {
+	func showCheckout(_ checkoutNSDict: NSDictionary) {
 		checkoutDict = checkoutNSDict as! [String : Any]
 		checkoutURL = (checkoutNSDict["checkoutURL"] as? String)!
-		checkoutAPIKeyName = (checkoutNSDict["checkoutAPIKeyName"] as? String)!
-		checkoutAPIKeyValue = (checkoutNSDict["checkoutAPIKeyValue"] as? String)!
+		// checkoutAPIKeyName = (checkoutNSDict["checkoutAPIKeyName"] as? String)!
+		// checkoutAPIKeyValue = (checkoutNSDict["checkoutAPIKeyValue"] as? String)!
 
 		checkoutDict.removeValue(forKey: "checkoutURL")
-		checkoutDict.removeValue(forKey: "checkoutAPIKeyName")
-		checkoutDict.removeValue(forKey: "checkoutAPIKeyValue")
-
-		startCheckout()
-	}
-
-	func startCheckout() {
-		let checkoutViewController = CheckoutViewController(delegate: self)
+		// checkoutDict.removeValue(forKey: "checkoutAPIKeyName")
+		// checkoutDict.removeValue(forKey: "checkoutAPIKeyValue")
 
 		DispatchQueue.main.async {
-			let appDelegate = UIApplication.shared.delegate as! AppDelegate
-			let rootViewController = appDelegate.window.rootViewController
+			let hostViewController = UIApplication.shared.keyWindow?.rootViewController
 
-			rootViewController?.present(checkoutViewController, animated: true)
+			self.startCheckout(hostViewController!)
 		}
+	}
+
+	func startCheckout(_ hostViewController: UIViewController) {
+		let checkoutViewController = CheckoutViewController(delegate: self)
+		hostViewController.present(checkoutViewController, animated: true)
 	}
 
 	func checkoutViewController(_ controller: CheckoutViewController,
@@ -54,7 +52,7 @@ class ReAdyenPay: RCTEventEmitter, CheckoutViewControllerDelegate {
 		request.httpBody = try? JSONSerialization.data(withJSONObject: checkoutDict, options: [])
 
 		request.allHTTPHeaderFields = [
-			checkoutAPIKeyName: checkoutAPIKeyValue,
+			// checkoutAPIKeyName: checkoutAPIKeyValue,
 			"Content-Type": "application/json"
 		]
 
@@ -84,15 +82,15 @@ class ReAdyenPay: RCTEventEmitter, CheckoutViewControllerDelegate {
 
 	func checkoutResult(result: PaymentRequestResult) {
 		var adyenResult = String()
-		var adyenToken = String()
+		var adyenPayload = String()
 
 		switch result {
 			case let .payment(payment):
 				adyenResult = payment.status.rawValue.capitalized
-				adyenToken = payment.payload
+				adyenPayload = payment.payload
 				var dict = Dictionary<String, String>()
 				dict["adyenResult"] = adyenResult
-				dict["adyenToken"] = adyenToken
+				dict["adyenPayload"] = adyenPayload
 				sendEvent(withName: "onCheckoutDone", body: dict)
 
 			case let .error(error):
