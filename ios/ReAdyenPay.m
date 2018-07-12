@@ -3,6 +3,6 @@
 @interface RCT_EXTERN_MODULE(ReAdyenPay, NSObject)
 
 RCT_EXTERN_METHOD(showCheckout:(NSDictionary *)data)
-RCT_EXTERN_METHOD(applicationRedirect:(NSURL *)URL)
+RCT_EXTERN_METHOD(applicationRedirect:(NSURL *)url)
 
 @end

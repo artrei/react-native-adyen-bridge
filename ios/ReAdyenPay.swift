@@ -3,6 +3,10 @@ import Adyen
 
 @objc(ReAdyenPay)
 class ReAdyenPay: RCTEventEmitter, CheckoutViewControllerDelegate {
+	override func supportedEvents() -> [String]! {
+		return ["onCheckoutDone", "url"]
+	}
+
 	fileprivate var checkoutDict = Dictionary<String, Any>()
 	fileprivate var checkoutURL = String()
 	// fileprivate var checkoutAPIKeyName = String()
@@ -12,10 +16,6 @@ class ReAdyenPay: RCTEventEmitter, CheckoutViewControllerDelegate {
 	@objc(applicationRedirect:)
 	func applicationRedirect(_ url: URL) {
 		urlCompletion?(url)
-	}
-
-	override func supportedEvents() -> [String]! {
-		return ["onCheckoutDone", "url"]
 	}
 
 	@objc(showCheckout:)
@@ -38,6 +38,7 @@ class ReAdyenPay: RCTEventEmitter, CheckoutViewControllerDelegate {
 
 	func startCheckout(_ hostViewController: UIViewController) {
 		let checkoutViewController = CheckoutViewController(delegate: self)
+
 		hostViewController.present(checkoutViewController, animated: true)
 	}
 
