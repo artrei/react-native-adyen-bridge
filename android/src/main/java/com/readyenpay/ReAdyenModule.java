@@ -28,8 +28,8 @@ import java.util.Map;
 public class ReAdyenModule extends ReactContextBaseJavaModule {
 	private JSONObject checkoutObject;
 	private String checkoutUrl = "";
-	// private String checkoutAPIKeyName = "";
-	// private String checkoutAPIKeyValue = "";
+	private String checkoutAPIKeyName = "";
+	private String checkoutAPIKeyValue = "";
 	private PaymentRequest paymentRequest;
 
 	public ReAdyenModule(ReactApplicationContext reactContext) {
@@ -51,16 +51,22 @@ public class ReAdyenModule extends ReactContextBaseJavaModule {
 	public void showCheckout(ReadableMap data) {
 		checkoutObject = new JSONObject(data.toHashMap());
 		checkoutUrl = data.getString("checkoutURL");
-		// checkoutAPIKeyName = data.getString("checkoutAPIKeyName");
-		// checkoutAPIKeyValue = data.getString("checkoutAPIKeyValue");
+
+		checkoutObject.remove("checkoutURL");
+
+		if (!checkoutObject.isNull("checkoutAPIKeyName")) {
+			checkoutAPIKeyName = data.getString("checkoutAPIKeyName");
+			checkoutObject.remove("checkoutAPIKeyName");
+		}
+		
+		if (!checkoutObject.isNull("checkoutAPIKeyValue")) {
+			checkoutAPIKeyValue = data.getString("checkoutAPIKeyValue");
+			checkoutObject.remove("checkoutAPIKeyValue");
+		}
 
 		try {
 			checkoutObject.put("amount", new JSONObject(data.getMap("amount").toHashMap()));
 		} catch(JSONException e) {}
-
-		checkoutObject.remove("checkoutURL");
-		// checkoutObject.remove("checkoutAPIKeyName");
-		// checkoutObject.remove("checkoutAPIKeyValue");
 
 		paymentRequest = new PaymentRequest(this.getCurrentActivity(), paymentRequestListener);
 		paymentRequest.start();
@@ -72,7 +78,10 @@ public class ReAdyenModule extends ReactContextBaseJavaModule {
 				final PaymentDataCallback paymentDataCallback) {
 			final Map<String, String> headers = new HashMap<>();
 			headers.put("Content-Type", "application/json; charset=UTF-8");
-			// headers.put(checkoutAPIKeyName, checkoutAPIKeyValue);
+
+			if (!checkoutAPIKeyName.isEmpty() && !checkoutAPIKeyValue.isEmpty()) {
+				headers.put(checkoutAPIKeyName, checkoutAPIKeyValue);
+			}
 
 			try {
 				checkoutObject.put("token", token);

@@ -9,8 +9,8 @@ class ReAdyenPay: RCTEventEmitter, CheckoutViewControllerDelegate {
 
 	fileprivate var checkoutDict = Dictionary<String, Any>()
 	fileprivate var checkoutURL = String()
-	// fileprivate var checkoutAPIKeyName = String()
-	// fileprivate var checkoutAPIKeyValue = String()
+	fileprivate var checkoutAPIKeyName = String()
+	fileprivate var checkoutAPIKeyValue = String()
 	fileprivate var urlCompletion: URLCompletion?
 
 	@objc(applicationRedirect:)
@@ -22,12 +22,18 @@ class ReAdyenPay: RCTEventEmitter, CheckoutViewControllerDelegate {
 	func showCheckout(_ checkoutNSDict: NSDictionary) {
 		checkoutDict = checkoutNSDict as! [String : Any]
 		checkoutURL = (checkoutNSDict["checkoutURL"] as? String)!
-		// checkoutAPIKeyName = (checkoutNSDict["checkoutAPIKeyName"] as? String)!
-		// checkoutAPIKeyValue = (checkoutNSDict["checkoutAPIKeyValue"] as? String)!
 
 		checkoutDict.removeValue(forKey: "checkoutURL")
-		// checkoutDict.removeValue(forKey: "checkoutAPIKeyName")
-		// checkoutDict.removeValue(forKey: "checkoutAPIKeyValue")
+
+		if (checkoutDict["checkoutAPIKeyName"] != nil) {
+			checkoutAPIKeyName = (checkoutNSDict["checkoutAPIKeyName"] as? String)!
+			checkoutDict.removeValue(forKey: "checkoutAPIKeyName")
+		}
+
+		if (checkoutDict["checkoutAPIKeyValue"] != nil) {
+		 	checkoutAPIKeyValue = (checkoutNSDict["checkoutAPIKeyValue"] as? String)!
+			checkoutDict.removeValue(forKey: "checkoutAPIKeyValue")
+		}
 
 		DispatchQueue.main.async {
 			let hostViewController = UIApplication.shared.keyWindow?.rootViewController
@@ -53,9 +59,12 @@ class ReAdyenPay: RCTEventEmitter, CheckoutViewControllerDelegate {
 		request.httpBody = try? JSONSerialization.data(withJSONObject: checkoutDict, options: [])
 
 		request.allHTTPHeaderFields = [
-			// checkoutAPIKeyName: checkoutAPIKeyValue,
 			"Content-Type": "application/json"
 		]
+
+		if (!checkoutAPIKeyName.isEmpty && !checkoutAPIKeyValue.isEmpty) {
+			request.addValue(checkoutAPIKeyValue, forHTTPHeaderField: checkoutAPIKeyName)
+		}
 
 		let session = URLSession(configuration: .default)
 		session.dataTask(with: request) { data, response, error in
