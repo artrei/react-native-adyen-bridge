@@ -1,2 +1,4 @@
-android/.gradle/
 android/build/
+android/.gradle/
+android/.project
+android/.settings

@@ -8,9 +8,13 @@ class ReAdyenPay: RCTEventEmitter, CheckoutViewControllerDelegate {
 	}
 
 	fileprivate var checkoutDict = Dictionary<String, Any>()
+	fileprivate var verifyDict = Dictionary<String, Any>()
 	fileprivate var checkoutURL = String()
+	fileprivate var verifyURL = String()
 	fileprivate var checkoutAPIKeyName = String()
 	fileprivate var checkoutAPIKeyValue = String()
+	fileprivate var adyenPayload = String()
+	fileprivate var adyenResult = String()
 	fileprivate var urlCompletion: URLCompletion?
 
 	@objc(applicationRedirect:)
@@ -20,10 +24,17 @@ class ReAdyenPay: RCTEventEmitter, CheckoutViewControllerDelegate {
 
 	@objc(showCheckout:)
 	func showCheckout(_ checkoutNSDict: NSDictionary) {
-		checkoutDict = checkoutNSDict as! [String : Any]
-		checkoutURL = (checkoutNSDict["checkoutURL"] as? String)!
-
-		checkoutDict.removeValue(forKey: "checkoutURL")
+		checkoutDict = (checkoutNSDict as? [String : Any])!
+		
+		if (checkoutDict["checkoutURL"] != nil) {
+			checkoutURL = (checkoutNSDict["checkoutURL"] as? String)!
+			checkoutDict.removeValue(forKey: "checkoutURL")
+		}
+		
+		if (checkoutDict["verifyURL"] != nil) {
+			verifyURL = (checkoutNSDict["verifyURL"] as? String)!
+			checkoutDict.removeValue(forKey: "verifyURL")
+		}
 
 		if (checkoutDict["checkoutAPIKeyName"] != nil) {
 			checkoutAPIKeyName = (checkoutNSDict["checkoutAPIKeyName"] as? String)!
@@ -68,12 +79,14 @@ class ReAdyenPay: RCTEventEmitter, CheckoutViewControllerDelegate {
 
 		let session = URLSession(configuration: .default)
 		session.dataTask(with: request) { data, response, error in
-			if let error = error {
-				var dict = Dictionary<String, String>()
-				dict["adyenResult"] = error.localizedDescription
-				self.sendEvent(withName: "onCheckoutDone", body: dict)
-			} else if let data = data {
-				completion(data)
+			if let responseData = data {
+				completion(responseData)
+			} else if let error = error {
+				self.adyenResult = error.localizedDescription
+				self.sendResult()
+			} else {
+				self.adyenResult = "Failed to create session."
+				self.sendResult()
 			}
 		}.resume()
 	}
@@ -91,23 +104,63 @@ class ReAdyenPay: RCTEventEmitter, CheckoutViewControllerDelegate {
 	}
 
 	func checkoutResult(result: PaymentRequestResult) {
-		var adyenResult = String()
-		var adyenPayload = String()
-
 		switch result {
 			case let .payment(payment):
-				adyenResult = payment.status.rawValue.capitalized
-				adyenPayload = payment.payload
-				var dict = Dictionary<String, String>()
-				dict["adyenResult"] = adyenResult
-				dict["adyenPayload"] = adyenPayload
-				sendEvent(withName: "onCheckoutDone", body: dict)
-
+				switch payment.status {
+					case .authorised:
+						self.verifyPayment(payment: payment)
+					default:
+						self.adyenResult = payment.status.rawValue.capitalized
+						self.sendResult()
+				}
 			case let .error(error):
-				adyenResult = error.errorDescription!
-				var dict = Dictionary<String, String>()
-				dict["adyenResult"] = adyenResult
-				sendEvent(withName: "onCheckoutDone", body: dict)
+				self.adyenResult = error.errorDescription!
+				self.sendResult()
 		}
+	}
+	
+	func verifyPayment(payment: Payment) {
+		self.adyenPayload = payment.payload
+		self.adyenResult = payment.status.rawValue.capitalized
+		
+		let url = URL(string: verifyURL)!
+		var request = URLRequest(url: url)
+		
+		request.httpMethod = "POST"
+		verifyDict["payload"] = adyenPayload
+		request.httpBody = try? JSONSerialization.data(withJSONObject: verifyDict, options: [])
+		
+		request.allHTTPHeaderFields = [
+			"Content-Type": "application/json"
+		]
+		
+		let session = URLSession(configuration: .default)
+		session.dataTask(with: request) { data, response, error in
+			if let responseData = data {
+				let responseJson = try? JSONSerialization.jsonObject(with: responseData, options: [])
+				let responseDict = (responseJson as? [String : Any])!
+				let authResponse = responseDict["authResponse"] as? String
+				
+				if (authResponse == payment.status.rawValue.capitalized) {
+					self.sendResult()
+				} else {
+					self.adyenResult = "Failed to verify payment."
+					self.sendResult()
+				}
+			} else if let error = error {
+				self.adyenResult = error.localizedDescription
+				self.sendResult()
+			} else {
+				self.adyenResult = "Failed to verify payment."
+				self.sendResult()
+			}
+		}.resume()
+	}
+	
+	func sendResult() {
+		var dict = Dictionary<String, String>()
+		dict["adyenResult"] = adyenResult
+		dict["adyenPayload"] = adyenPayload
+		sendEvent(withName: "onCheckoutDone", body: dict)
 	}
 }

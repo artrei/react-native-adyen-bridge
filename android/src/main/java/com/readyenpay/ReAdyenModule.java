@@ -27,9 +27,13 @@ import java.util.Map;
 
 public class ReAdyenModule extends ReactContextBaseJavaModule {
 	private JSONObject checkoutObject;
-	private String checkoutUrl = "";
-	private String checkoutAPIKeyName = "";
-	private String checkoutAPIKeyValue = "";
+	private JSONObject verifyObject;
+	private String checkoutUrl;
+	private String verifyUrl;
+	private String checkoutAPIKeyName;
+	private String checkoutAPIKeyValue;
+	private String adyenPayload;
+	private String adyenResult;
 	private PaymentRequest paymentRequest;
 
 	public ReAdyenModule(ReactApplicationContext reactContext) {
@@ -50,10 +54,17 @@ public class ReAdyenModule extends ReactContextBaseJavaModule {
 	@ReactMethod
 	public void showCheckout(ReadableMap data) {
 		checkoutObject = new JSONObject(data.toHashMap());
-		checkoutUrl = data.getString("checkoutURL");
 
-		checkoutObject.remove("checkoutURL");
+		if (!checkoutObject.isNull("checkoutURL")) {
+			checkoutUrl = data.getString("checkoutURL");
+			checkoutObject.remove("checkoutURL");
+		}
 
+		if (!checkoutObject.isNull("verifyURL")) {
+			verifyUrl = data.getString("verifyURL");
+			checkoutObject.remove("verifyURL");
+		}
+		
 		if (!checkoutObject.isNull("checkoutAPIKeyName")) {
 			checkoutAPIKeyName = data.getString("checkoutAPIKeyName");
 			checkoutObject.remove("checkoutAPIKeyName");
@@ -79,7 +90,7 @@ public class ReAdyenModule extends ReactContextBaseJavaModule {
 			final Map<String, String> headers = new HashMap<>();
 			headers.put("Content-Type", "application/json; charset=UTF-8");
 
-			if (!checkoutAPIKeyName.isEmpty() && !checkoutAPIKeyValue.isEmpty()) {
+			if (checkoutAPIKeyName != null && checkoutAPIKeyValue != null) {
 				headers.put(checkoutAPIKeyName, checkoutAPIKeyValue);
 			}
 
@@ -94,9 +105,8 @@ public class ReAdyenModule extends ReactContextBaseJavaModule {
 				}
 				@Override
 				public void onFailure(final Throwable e) {
-					WritableMap map = Arguments.createMap();
-					map.putString("adyenResult", e.getMessage());
-					sendEvent("onCheckoutDone", map);
+					adyenResult = e.getMessage();
+					sendResult();
 					paymentRequest.cancel();
 				}
 			});
@@ -104,28 +114,63 @@ public class ReAdyenModule extends ReactContextBaseJavaModule {
 
 		@Override
 		public void onPaymentResult(PaymentRequest paymentRequest, PaymentRequestResult paymentRequestResult) {
-			String adyenResult = "";
-			String adyenPayload = "";
-
 			if (paymentRequestResult.isProcessed()) {
-				Payment payment = paymentRequestResult.getPayment();
-				adyenResult = payment.getPaymentStatus().toString();
-				adyenPayload = payment.getPayload();
-
-				WritableMap map = Arguments.createMap();
-				map.putString("adyenResult", adyenResult);
-				map.putString("adyenPayload", adyenPayload);
-
-				sendEvent("onCheckoutDone", map);
+				if (paymentRequestResult.getPayment().getPaymentStatus() == Payment.PaymentStatus.AUTHORISED) {
+					verifyPayment(paymentRequestResult.getPayment());
+				} else {
+					adyenResult = paymentRequestResult.getPayment().getPaymentStatus().toString();
+					sendResult();
+				}
 			} else {
 				Throwable error = paymentRequestResult.getError();
 				adyenResult = error.getMessage();
-
-				WritableMap map = Arguments.createMap();
-				map.putString("adyenResult", adyenResult);
-
-				sendEvent("onCheckoutDone", map);
+				sendResult();
 			}
 		}
 	};
+
+	private void verifyPayment(final Payment payment) {
+		adyenPayload = payment.getPayload();
+		adyenResult = payment.getPaymentStatus().toString();
+
+		final Map<String, String> headers = new HashMap<>();
+		headers.put("Content-Type", "application/json; charset=UTF-8");
+
+		verifyObject = new JSONObject();
+
+		try {
+			verifyObject.put("payload", adyenPayload);
+		} catch(Exception e) {}
+
+		AsyncHttpClient.post(verifyUrl, headers, verifyObject.toString(), new HttpResponseCallback() {
+			@Override
+			public void onSuccess(final byte[] response) {
+				try {
+					JSONObject jsonVerifyResponse = new JSONObject(new String(response, Charset.forName("UTF-8")));
+					String authResponse = jsonVerifyResponse.getString("authResponse");
+					if (authResponse.equalsIgnoreCase(adyenResult)) {
+						sendResult();
+					} else {
+						adyenResult = "Failed to verify payment.";
+						sendResult();
+					}
+				} catch (JSONException e) {
+					adyenResult = e.getMessage();
+					sendResult();
+				}
+			}
+			@Override
+			public void onFailure(final Throwable e) {
+				adyenResult = e.getMessage();
+				sendResult();
+			}
+		});
+	}
+
+	private void sendResult() {
+		WritableMap map = Arguments.createMap();
+		map.putString("adyenResult", adyenResult);
+		map.putString("adyenPayload", adyenPayload);
+		sendEvent("onCheckoutDone", map);
+	}
 }
